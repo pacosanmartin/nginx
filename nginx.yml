@@ -1,0 +1,44 @@
+---
+- hosts: webserver
+  user: nginx
+  tasks:
+    - name: Update yum
+      yum: pkg=yum state=latest
+
+    - name: Install EPEL release for nginx
+      yum: name=epel-release state=present
+
+    - name: Install libselinux-python for the file upload
+      yum: name=libselinux-python state=installed 
+
+    - name: Install nginx web server
+      yum: name=nginx state=present update_cache=true
+    # yum: 
+    #    name=http://nginx.org/packages/centos/6/noarch/RPMS/nginx-release-centos-6-0.el6.ngx.noarch.rpm 
+    #    state=present 
+    #    update_cache=true
+    #    install_recommends=true
+      notify:
+        - start nginx
+
+    - name: Upload the default index.html file
+      copy: src=html_files/index.html dest=/data/www/ mode=0777 
+      #notify:
+        #- restart nginx
+
+    - name: Copy nginx config file to server
+      template: src=nginx.conf dest=/etc/nginx/nginx.conf
+      #notify: 
+        #- restart nginx
+
+    - name: Copy nginx default file to default
+      template: src=default.conf dest=/etc/nginx/conf.d/default.conf
+      notify: 
+        - restart nginx
+
+  handlers:
+    - name: start nginx
+      service: name=nginx state=started
+
+    - name: restart nginx
+      service: name=nginx state=restarted 
